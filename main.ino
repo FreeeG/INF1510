@@ -56,7 +56,7 @@ void setup() {
 
   //Blaatann snakker med TX/RX og trenger derfor ikke initialiseres eller deklareres
 
-  kompass.attach(A0); // Designer port for modServo
+  kompass.attach(8); // Designer port for modServo
   kompass.write(46); //Initialliser uten momentum
 
   rotALast = digitalRead(rotA); // Sett encoderens start possisjon
