@@ -4,31 +4,31 @@
   #include <Servo.h> //Servo
   #include <SoftwareSerial.h> //RX, TX
 //Bibiliotek
-#define STOP 70
-#define VENSTRE 56
-#define HOYRE 84
+
 //Rotary encoder
  const int rotA = 3;  //Pin A til ground(C)
  const int rotB = 4;  //Pin B til ground(C)
- int encoderPosCount = STOP; //lagrer vridningsverdien
- int rotALast; //Hvilken amp har pinA fra rot encoder i det vi starter sketchen
+ int enc = 0; //lagrer vridningsverdien
+ int rotLast; //Hvilken amp har pinA fra rot encoder i det vi starter sketchen
  int aVal; //PinA´s naavaerende possisjon
- boolean bCW;  //Hvilken retning går encoderen?
+ boolean retning;  //Hvilken retning går encoderen? 
 //Rotary encoder
 
 //Servo-motor
   Servo kompass;
+  #define STOP 70
+  #define VENSTRE 56
+  #define HOYRE 84
 //Servo-motor
 
 //Vibrasjons-motor
   const int vibrator = 2;
-  
-//Vibrasjons-motor
   boolean vibrere = false;
   unsigned long vibrMillis;
   int vibrTid = 0;
   int vibrTeller = 0;
   boolean vibBoolean = false;
+//Vibrasjons-motor
 
 //Blaatann
   char incomingByte;
@@ -38,7 +38,7 @@
   const char o = 'v';
   const char naer = 'n';
   const char lengre = 'l';
- // SoftwareSerial mySerial(0, 1); // RX, TX
+  SoftwareSerial mySerial(0, 1); // RX, TX
 //Blaatann
 
 
@@ -48,23 +48,25 @@
   const int rgbB = 10;
 //RGB-LED
 
-//Ymis Instr.
-  boolean trykket = false;
-  unsigned long prevMillis;
-  int i = 1; // teller
-  int knapp = 13;
-  //Aksepter/Intterface knapp.
-//Ymis Instr.
-
 //Variabler for avstand
-int avstand;
-unsigned long fargeMillis = millis(); //egen millis for blinke delay
-int blinkDelay = 0; //variabel som blir styrt i metode senere, settes til default 0
-boolean fargeSjekk = false; //boolean som sjekker om lysene er paa eller av. Brukes til aa styre blinking
-String avstandsModus;
+  int avstand;
+  unsigned long fargeMillis = millis(); //egen millis for blinke delay
+  int blinkDelay = 0; //variabel som blir styrt i metode senere, settes til default 0
+  boolean fargeSjekk = false; //boolean som sjekker om lysene er paa eller av. Brukes til aa styre blinking
+  String avstandsModus;
+//Variabler for avstand
 
 //variabler for rutervalg:
-boolean kjoer = false;
+  boolean kjoer = false;
+//variabler for rutervalg:
+
+//Ymis Instr.
+  boolean trykket = false;
+  unsigned long prevMillis; //Millis paa lys
+  int i = 1; // teller
+  int knapp = 13; //Aksepterknapp
+//Ymis Instr.
+
 
 
 void setup() {
@@ -75,15 +77,17 @@ void setup() {
   pinMode(rgbG, OUTPUT); //RGB-LED
   pinMode(rgbB, OUTPUT); //RGB-LED
 
-  pinMode (vibrator,OUTPUT); // VibrasjonsMottor
+  pinMode(vibrator,OUTPUT); // VibrasjonsMottor
+  
+  pinMode(knapp, INPUT); //Akseptanseknapp
 
   //Blaatann snakker med TX/RX og trenger derfor ikke initialiseres eller deklareres
 
   kompass.attach(8); // Designer port for modServo
   kompass.write(STOP); //Initialliser uten momentum
 
-  rotALast = digitalRead(rotA); // Sett encoderens start possisjon
-  Serial.begin(9600); //Seriel port read på 9HOYRE0
+  rotLast = digitalRead(rotA); // Sett encoderens start possisjon
+  Serial.begin(9600); //Seriel port read på 9600
 }
 
 void loop() {
