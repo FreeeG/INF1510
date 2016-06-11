@@ -8,25 +8,27 @@
 //Rotary encoder
  const int rotA = 3;  //Pin A til ground(C)
  const int rotB = 4;  //Pin B til ground(C)
- int encoderPosCount = 46; //lagrer vridningsverdien
- int rotALast; //Hvilken amp har pinA fra rot encoder i det vi starter sketchen
+ int enc = 0; //lagrer vridningsverdien
+ int rotLast; //Hvilken amp har pinA fra rot encoder i det vi starter sketchen
  int aVal; //PinA´s naavaerende possisjon
- boolean bCW;  //Hvilken retning går encoderen?
+ boolean retning;  //Hvilken retning går encoderen? 
 //Rotary encoder
 
 //Servo-motor
   Servo kompass;
+  #define STOP 70
+  #define VENSTRE 56
+  #define HOYRE 84
 //Servo-motor
 
 //Vibrasjons-motor
   const int vibrator = 2;
-  
-//Vibrasjons-motor
   boolean vibrere = false;
   unsigned long vibrMillis;
   int vibrTid = 0;
   int vibrTeller = 0;
   boolean vibBoolean = false;
+//Vibrasjons-motor
 
 //Blaatann
   char incomingByte;
@@ -46,39 +48,44 @@
   const int rgbB = 10;
 //RGB-LED
 
-//Ymis Instr.
-  unsigned long prevMillis;
-  int i = 1; // teller
-  //Aksepter/Intterface knapp.
-//Ymis Instr.
-
 //Variabler for avstand
-int avstand;
-unsigned long fargeMillis = millis(); //egen millis for blinke delay
-int blinkDelay = 0; //variabel som blir styrt i metode senere, settes til default 0
-boolean fargeSjekk = false; //boolean som sjekker om lysene er paa eller av. Brukes til aa styre blinking
-String avstandsModus;
+  int avstand;
+  unsigned long fargeMillis = millis(); //egen millis for blinke delay
+  int blinkDelay = 0; //variabel som blir styrt i metode senere, settes til default 0
+  boolean fargeSjekk = false; //boolean som sjekker om lysene er paa eller av. Brukes til aa styre blinking
+  String avstandsModus;
+//Variabler for avstand
 
 //variabler for rutervalg:
-boolean kjoer = false;
+  boolean kjoer = false;
+//variabler for rutervalg:
+
+//Ymis Instr.
+  boolean trykket = false;
+  unsigned long prevMillis; //Millis paa lys
+  int i = 1; // teller
+  int knapp = 13; //Aksepterknapp
+//Ymis Instr.
+
 
 
 void setup() {
   pinMode (rotA,INPUT); // Rotary encoder
   pinMode (rotB,INPUT); // Rotary encoder
+  rotLast = digitalRead(rotA); // Sett encoderens start possisjon
 
   pinMode(rgbR, OUTPUT); //RGB-LED
   pinMode(rgbG, OUTPUT); //RGB-LED
   pinMode(rgbB, OUTPUT); //RGB-LED
 
-  pinMode (vibrator,OUTPUT); // VibrasjonsMottor
-
-  //Blaatann snakker med TX/RX og trenger derfor ikke initialiseres eller deklareres
-
+  pinMode(vibrator,OUTPUT); // VibrasjonsMottor
+  
+  pinMode(knapp, INPUT); //Akseptanseknapp
+  
   kompass.attach(8); // Designer port for modServo
-  kompass.write(70); //Initialliser uten momentum
-
-  rotALast = digitalRead(rotA); // Sett encoderens start possisjon
+  kompass.write(STOP); //Initialliser uten momentum
+  
+  //Blaatann snakker med TX/RX og trenger derfor ikke initialiseres eller deklareres
   Serial.begin(9600); //Seriel port read på 9600
 }
 
@@ -86,52 +93,113 @@ void loop() {
   if( Serial.available() > 0 ){ // if data is available to read
     incomingByte = Serial.read();
     Serial.print(incomingByte);
-    if(incomingByte=='s'){ //Start testrute
-       startRute(500); // start testrute med testparameter: int avstand
+    if(incomingByte=='q' || 'r' || 'x'){ //Maa velge vansklighetsgrad forst.
+       
+      vanskelighet(incomingByte);
+      
+      if(incomingByte=='s'){ //Start testrute
+        startRute(1500); // start testrute med testparameter: int avstand
+      }
+    } 
+  }
+}
+
+void vanskelighet(char x){
+  if(x =='q'){  //rod
+    farge(255,0,0);
+  }
+  else if(x =='r'){ //gul
+    farge(248,255,0);
+  }
+  else if(x =='x'){ //gronn
+    farge(0,255,0);
+  }
+  for(int i1 = 0; i1<3; i++){
+    digitalWrite(vibrator, HIGH);
+    delay(500);
+    digitalWrite(vibrator, LOW);
+    delay(500);
+  }
+  /*digitalWrite(vibrator, HIGH);
+  delay(500);
+  digitalWrite(vibrator, LOW);
+  delay(500);
+  digitalWrite(vibrator, HIGH);
+  delay(500);
+  digitalWrite(vibrator, LOW);
+  delay(500);
+  digitalWrite(vibrator, HIGH);
+  delay(500);
+  digitalWrite(vibrator, LOW);*/
+  while(!trykket){
+    if(digitalRead(knapp) == HIGH){
+      trykket = true;
+      farge(0,0,255);
+      delay(250);
+      farge(0,0,0);
+      delay(250);
+      farge(0,0,255);
+      delay(250);
+      farge(0,0,0);
+      delay(250);
+      farge(0,0,255);
+      delay(250);
+      farge(0,0,0);
+      delay(250);
+      farge(0,0,255);
+    }
+  }
+   startRute(1500);
+}
+void startRute (int avstand) {
+  kjoer = true;
+  while (kjoer) {
+    receiveSignal();
+    avstandsFeedback (avstand); //bestemmer hvilket lys som skal blinke og hvor fort det skal blinke basert paa avstand
+    ventLys();
+    ventKompass();
+ }
+}
+
+
+void receiveSignal(){
+  if( Serial.available() > 0 ){ // if data is available to read
+    incomingByte = Serial.read();
+    Serial.print(incomingByte);
+    if(incomingByte=='2'){ //Venstre
+      kompass.write(VENSTRE);
+    } else if(incomingByte== '9'){ //Hoyre
+      kompass.write(HOYRE);
+    } else if(incomingByte == 'n') { //Naermere med 25m
+       avstand -= 25;
+    } else if(incomingByte == 'l') { //Lenger unna med 25m
+       avstand += 25;
+    } else if(incomingByte== 'f'){ //Start
+       digitalWrite(vibrator, HIGH);
+       kompass.write(STOP);
+    } else if(incomingByte== 'v'){ //Maal
+       digitalWrite(vibrator, LOW);
+       kompass.write(STOP);
     }
   }
 }
 
-void startRute (int avstand) {
-  kjoer = true;
-  while (kjoer) {
-    if( Serial.available() > 0 ){ // if data is available to read
-     incomingByte = Serial.read();
-     Serial.print(incomingByte);
-     if(incomingByte=='2'){ //Venstre
-       kompass.write(30);
-     } else if(incomingByte== '9'){ //Hoyre
-       kompass.write(60);
-     } else if(incomingByte == 'n') { //Naermere med 25m
-         avstand -= 25;
-     } else if(incomingByte == 'l') { //Lenger unna med 25m
-         avstand += 25;
-     } else if(incomingByte== 'f'){ //Start
-       digitalWrite(vibrator, HIGH);
-       kompass.write(46);
-     } else if(incomingByte== 'v'){ //Maal
-       digitalWrite(vibrator, LOW);
-       kompass.write(46);
-     }
-    }
-  
-    avstandsFeedback (avstand); //bestemmer hvilket lys som skal blinke og hvor fort det skal blinke basert paa avstand
-    
-    if (vibrere == true) {
+void ventKompass(){ //"delay paa 70ms
+  if(millis()-prevMillis > 70) {
+    kompass.write(STOP);
+    prevMillis = millis();
+  } 
+}
+
+void ventLys(){
+  if (vibrere == true) {
         if (millis()-vibrMillis < vibrTid) {
           vibratorMetode (true);
         } else {
           vibratorMetode (false);
         }
     }
-  
-      if(millis()-prevMillis > 70) {
-      kompass.write(46);
-      prevMillis = millis();
-    }
-  }
 }
-
 
 
 
