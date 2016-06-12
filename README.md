@@ -6,3 +6,4 @@ Dette repository-et inneholder noen versjoner av koden som ble brukt til evaluer
 
 ## Koblingsdiagram
 ![Hiddn](http://i.imgur.com/ChPDYtE.png)
+*ESP8266 som er referensiert her er egentlig en HC-06 Blåtann modul)*
