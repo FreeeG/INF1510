@@ -92,11 +92,11 @@ void setup() {
 
 void loop() {
   
-  if( Serial.available() > 0 ){ // if data is available to read
+  if( Serial.available() > 0 ){ // Mottar vi noen kommunikasjon paa 9600 båndet?
     incomingByte = Serial.read();
     Serial.print(incomingByte);
-    if(incomingByte=='q' || 'r' || 'x'){ //Maa velge vansklighetsgrad forst.
-       
+    if(incomingByte=='q' || 'r' || 'x'){ //Maa velge vansklighetsgrad forst. Dette er for testfasilitatoren
+      kompass.write(VENSTRE);
       vanskelighet(incomingByte);
       
       if(incomingByte=='s'){ //Start testrute
@@ -107,7 +107,7 @@ void loop() {
 }
 
 void vanskelighet(char x){
-  if(x =='q'){  //rod
+  if(x =='q'){  //Rod vansklighetsgrad. Konstant lys for a differensiere fra avstand under "jakten"
     farge(255,0,0);
   }
   else if(x =='r'){ //gul
@@ -116,19 +116,19 @@ void vanskelighet(char x){
   else if(x =='x'){ //gronn
     farge(0,255,0);
   }
-  for(int i1 = 0; i1<3; i1++){
+  for(int i1 = 0; i1<3; i1++){ //Vibrasjon 3stk
     digitalWrite(vibrator, HIGH);
     delay(500);
     digitalWrite(vibrator, LOW);
     delay(500);
   }
 
-  while(!trykket){
+  while(!trykket){//Så lenge brukeren ikke har trykket aksept
     incomingByte = Serial.read();
-    if(incomingByte=='s'){
-      trykket = true;
-      for(int i1 = 0; i1<3; i1++){
-        farge(0,0,255);
+    if(incomingByte=='s'){ //For testing er dette gjort fra Andriod. Denne kan byttes ut med if (digitalRead(knapp) == HIGH)
+      trykket = true;      //og prototypen vil fungere på samme maate. (eller ||) Vi greide å loesne knappen under testing
+      for(int i1 = 0; i1<3; i1++){ // saa den falt litt inn i skallet paa baandet og var noe vanskelig aa trykke paa
+        farge(0,0,255); // http://i.imgur.com/hWvYMtW.jpg
         delay(250);
         analogOff();
         delay(250);
@@ -149,7 +149,7 @@ void startRute () {
 }
 
 void receiveSignal(){
-  if( Serial.available() > 0 ){ // if data is available to read
+  if( Serial.available() > 0 ){ // Mottar vi noen kommunikasjon paa 9600 båndet?
     incomingByte = Serial.read();
     Serial.print(incomingByte);
     if(incomingByte=='2'){ //Venstre
@@ -258,30 +258,28 @@ void avstandsFeedback (int avstand) {
 void regnbue(){
   while(true){
     unsigned int rgbColour[3];
-
-    // Start off with red.
-    rgbColour[0] = 255;
+    
+    rgbColour[0] = 255; //Starter med rod 
     rgbColour[1] = 0;
     rgbColour[2] = 0;  
 
-  // Choose the colours to increment and decrement.
-  for (int decColour = 0; decColour < 3; decColour += 1) {
+  for (int decColour = 0; decColour < 3; decColour += 1) { //Velger farger aa oeke og senke
     int incColour = decColour == 2 ? 0 : decColour + 1;
 
-    // cross-fade the two colours.
+    // Blander to farger sammen for en soemloes overgang
     for(int i = 0; i < 255; i += 1) {
       rgbColour[decColour] -= 1;
       rgbColour[incColour] += 1;
       
       farge(rgbColour[0], rgbColour[1], rgbColour[2]);
-      delay(2);
+      delay(2); //Regnbuen gaar ganske radig
     }
   }
   }
 }
 
 
-void farge(unsigned int rod, unsigned int gronn, unsigned int blaa){
+void farge(unsigned int rod, unsigned int gronn, unsigned int blaa){ //Metode for aa skrive farge farge til diode
    /*#ifdef COMMON_ANODE
     rod = 255 - rod;
     gronn = 255 - gronn;
@@ -309,7 +307,7 @@ void analogOff(){ //AnalogWriter med null som parrametere for aa skru av fargen 
 }
 
 
-void fargeBlink(int rod, int gronn, int blaa){
+void fargeBlink(int rod, int gronn, int blaa){ //Skrur av eller paa avhengig av forigje state
   if(fargeSjekk == true){
     analogOff();
     fargeSjekk = false;
